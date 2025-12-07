@@ -53,11 +53,11 @@ A modern web interface for testing and interacting with Green-API (WhatsApp Busi
 
 1. **Access your hosting control panel** (cPanel)
 2. **Navigate to File Manager**
-3. **Upload the HTML file** to your public directory (usually `public_html` or `www`)
-4. **Access the dashboard** at: `https://yourdomain.com/whatsapp-api-dashboard.html`
+3. **Upload the HTML file** to your public directory (usually `public_html` or `www`, or `public`)
+4. **Access the dashboard** at: `https://yourdomain.com/green.html`
 
 #### Method 2: Using VPS/Cloud Server
 
 1. **Upload via SFTP/SCP**:
    ```bash
-   scp whatsapp-api-dashboard.html user@yourserver:/var/www/html/
+   scp green.html user@yourserver:/var/www/html/
