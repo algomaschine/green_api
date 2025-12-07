@@ -228,7 +228,7 @@
             transform: translateY(-3px);
         }
 
-        .phone-default {
+        .field-note {
             font-weight: 500;
             color: var(--primary);
             font-size: 14px;
@@ -321,23 +321,6 @@
             margin-top: 10px;
         }
 
-        /* Response styling */
-        .response-success {
-            color: #4CAF50;
-        }
-        
-        .response-error {
-            color: #f44336;
-        }
-        
-        .response-info {
-            color: #2196F3;
-        }
-        
-        .response-warning {
-            color: #ff9800;
-        }
-
         /* Responsive Design */
         @media (max-width: 1200px) {
             .main-content {
@@ -396,6 +379,27 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        .chatid-info {
+            background: rgba(37, 211, 102, 0.1);
+            border: 1px solid rgba(37, 211, 102, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .chatid-info h4 {
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+        
+        .chatid-info code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -446,13 +450,19 @@
                 <!-- Send Message Card -->
                 <div class="control-card">
                     <h2><i class="fas fa-comment-dots"></i> Send Message</h2>
+                    <div class="chatid-info">
+                        <h4>chatId Format:</h4>
+                        <p>Personal chat: <code>77771234567@c.us</code></p>
+                        <p>Group chat: <code>120363043968066561@g.us</code></p>
+                        <p>If only number is entered, <code>@c.us</code> will be added automatically.</p>
+                    </div>
                     <div class="form-group">
-                        <label for="sendMessagePhone">Phone Number</label>
+                        <label for="sendMessageChatId">chatId</label>
                         <div class="input-with-icon">
-                            <i class="fas fa-phone"></i>
-                            <input type="text" id="sendMessagePhone" value="77771234567">
+                            <i class="fas fa-id-badge"></i>
+                            <input type="text" id="sendMessageChatId" value="77771234567@c.us">
                         </div>
-                        <div class="phone-default">Default: 77771234567</div>
+                        <div class="field-note">Example: 77771234567@c.us or 120363043968066561@g.us</div>
                     </div>
                     <div class="form-group">
                         <label for="messageText">Message</label>
@@ -470,25 +480,18 @@
                 <div class="control-card">
                     <h2><i class="fas fa-file-upload"></i> Send File by URL</h2>
                     <div class="form-group">
-                        <label for="sendFilePhone">Phone Number</label>
+                        <label for="sendFileChatId">chatId</label>
                         <div class="input-with-icon">
-                            <i class="fas fa-phone"></i>
-                            <input type="text" id="sendFilePhone" value="77771234567">
+                            <i class="fas fa-id-badge"></i>
+                            <input type="text" id="sendFileChatId" value="77771234567@c.us">
                         </div>
-                        <div class="phone-default">Default: 77771234567</div>
+                        <div class="field-note">Example: 77771234567@c.us or 120363043968066561@g.us</div>
                     </div>
                     <div class="form-group">
                         <label for="fileUrl">File URL</label>
                         <div class="input-with-icon">
                             <i class="fas fa-link"></i>
                             <input type="text" id="fileUrl" placeholder="Enter file URL (e.g., https://example.com/file.pdf)">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="fileName">File Name (with extension)</label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-file"></i>
-                            <input type="text" id="fileName" placeholder="Enter file name (e.g., document.pdf)">
                         </div>
                     </div>
                     <div class="form-group">
@@ -560,6 +563,28 @@
         function formatTimestamp() {
             const now = new Date();
             return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        
+        // Extract filename from URL
+        function extractFileNameFromUrl(url) {
+            try {
+                const urlObj = new URL(url);
+                const pathname = urlObj.pathname;
+                if (pathname) {
+                    const fileName = pathname.split('/').pop();
+                    if (fileName && fileName.includes('.')) {
+                        return fileName;
+                    }
+                }
+            } catch (e) {
+                // If URL parsing fails, try to extract from the string
+                const lastSegment = url.split('/').pop();
+                if (lastSegment && lastSegment.includes('.')) {
+                    return lastSegment;
+                }
+            }
+            // Default fallback
+            return 'file';
         }
         
         function logResponse(method, endpoint, requestData, responseData, success = true, statusCode = null) {
@@ -699,11 +724,11 @@
         async function sendMessage() {
             if (!updateCredentials()) return;
             
-            const phoneNumber = document.getElementById('sendMessagePhone').value.trim();
+            const chatIdInput = document.getElementById('sendMessageChatId').value.trim();
             const message = document.getElementById('messageText').value.trim();
             
-            if (!phoneNumber) {
-                logError('Please enter a phone number');
+            if (!chatIdInput) {
+                logError('Please enter a chatId');
                 return;
             }
             
@@ -715,15 +740,19 @@
             const endpoint = `/waInstance${instanceId}/sendMessage/${apiToken}`;
             const fullUrl = `${API_BASE_URL}${endpoint}`;
             
-            // Format phone number with @c.us suffix
-            const chatId = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@c.us`;
+            // Format chatId - add @c.us suffix if not already present
+            let chatId = chatIdInput;
+            if (!chatId.includes('@')) {
+                chatId = `${chatId}@c.us`;
+                logInfo(`Auto-formatted chatId to: ${chatId}`);
+            }
             
             const requestBody = {
                 chatId: chatId,
                 message: message
             };
             
-            logInfo(`Sending message to ${phoneNumber}...`);
+            logInfo(`Sending message to ${chatId}...`);
             showLoading(sendMessageBtn, true);
             
             try {
@@ -757,13 +786,12 @@
         async function sendFileByUrl() {
             if (!updateCredentials()) return;
             
-            const phoneNumber = document.getElementById('sendFilePhone').value.trim();
+            const chatIdInput = document.getElementById('sendFileChatId').value.trim();
             const fileUrl = document.getElementById('fileUrl').value.trim();
-            const fileName = document.getElementById('fileName').value.trim();
             const caption = document.getElementById('fileCaption').value.trim();
             
-            if (!phoneNumber) {
-                logError('Please enter a phone number');
+            if (!chatIdInput) {
+                logError('Please enter a chatId');
                 return;
             }
             
@@ -772,16 +800,19 @@
                 return;
             }
             
-            if (!fileName) {
-                logError('Please enter a file name with extension');
-                return;
-            }
+            // Extract filename from URL
+            const fileName = extractFileNameFromUrl(fileUrl);
+            logInfo(`Extracted filename from URL: ${fileName}`);
             
             const endpoint = `/waInstance${instanceId}/sendFileByUrl/${apiToken}`;
             const fullUrl = `${API_BASE_URL}${endpoint}`;
             
-            // Format phone number with @c.us suffix
-            const chatId = phoneNumber.includes('@') ? phoneNumber : `${phoneNumber}@c.us`;
+            // Format chatId - add @c.us suffix if not already present
+            let chatId = chatIdInput;
+            if (!chatId.includes('@')) {
+                chatId = `${chatId}@c.us`;
+                logInfo(`Auto-formatted chatId to: ${chatId}`);
+            }
             
             const requestBody = {
                 chatId: chatId,
@@ -794,7 +825,7 @@
                 requestBody.caption = caption;
             }
             
-            logInfo(`Sending file to ${phoneNumber}...`);
+            logInfo(`Sending file to ${chatId}...`);
             showLoading(sendFileBtn, true);
             
             try {
@@ -844,7 +875,6 @@
             
             // Add sample file URL for testing
             document.getElementById('fileUrl').value = 'https://green-api.com/docs/assets/img/Logo_GREEN-API.jpg';
-            document.getElementById('fileName').value = 'green-api-logo.jpg';
             document.getElementById('fileCaption').value = 'Green API Logo';
             
             logInfo('Dashboard initialized with provided credentials');
